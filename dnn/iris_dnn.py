@@ -15,6 +15,7 @@ sys.path.append("../common")
 import sigmoid
 import numpy as np
 import random
+from sklearn import datasets
 
 class Layer:
     def __init__(self, unit_num, feature_num):
@@ -62,18 +63,9 @@ class Layer:
 
 
 if __name__ == "__main__":
-    x = np.array([[1,2,1]])
-    x = x.T
-    lay = Layer(2, 3)
-    fw = lay.forward(x)
-    print("fw:")
-    print(fw)
-    print("start bprob")
-    G = np.array([0.3])
-    G = G.T
-    bp = lay.bprob(x, G)
-    print("bp:")
-    print("{}".format(bp))
-    print("w:\n{}".format(lay.w))
-    lay.update_G(x, G)
-    print("up_w:\n{}".format(lay.w))
+    iris = datasets.load_iris()
+    print("{}".format(iris.data))
+    print("data size:{}".format(len(iris.data)))
+    print("label:\n{}".format(iris.target))
+
+    print("finished")
