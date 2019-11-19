@@ -61,11 +61,16 @@ class Layer:
         w_g = np.dot(tmp_G, x.T)
         self.w = self.w - (w_g * self.lam)
 
+def load_data():
+    train_data = np.load("train_data.npy")
+    train_out = np.load("train_label.npy")
+    test_data = np.load("test_data.npy")
+    test_label = np.load("test_label.npy")
+    print("train_data:\n{}".format(train_data))
+    print("train_out:\n{}".format(train_out))
+    print("test_data:\n{}".format(test_data))
+    print("test_label:\n{}".format(test_label))
 
 if __name__ == "__main__":
-    iris = datasets.load_iris()
-    print("{}".format(iris.data))
-    print("data size:{}".format(len(iris.data)))
-    print("label:\n{}".format(iris.target))
-
+    load_data()
     print("finished")

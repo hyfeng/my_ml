@@ -16,6 +16,14 @@ import random
 import numpy as np
 
 import sys
+def label_2_dnn_label(labels):
+    train_label_tr = []
+    for i in labels:
+        tmp = [0,0,0,0]
+        tmp[i] = 1
+        train_label_tr.append(tmp)
+    return np.array(train_label_tr)
+
 
 if __name__ == "__main__":
     iris = datasets.load_iris()
@@ -31,21 +39,16 @@ if __name__ == "__main__":
             indexs.append(a)
     choose = [False if i not in indexs else True for i in range(size)]
     test_data = data[choose]
-    test_label = label[choose]
-    test_data.dump("test_data.txt")
-    test_label.dump("test_label.txt")
+    test_label = label_2_dnn_label(label[choose])
+    np.save("test_data", test_data)
+    np.save("test_label", test_label)
     print("test:{}\ntest_data:\n{}".format(len(test_data), test_data))
     train_ch = [not i for i in choose]
     train_data = data[train_ch]
     train_label = label[train_ch]
-    train_label_tr = []
-    for i in train_label:
-        tmp = [0,0,0,0]
-        tmp[i] = 1
-        train_label_tr.append(tmp)
-    train_label_tr = np.array(train_label_tr)
-    train_data.dump("train_data.txt")
-    train_label_tr.dump("train_label.txt")
+    train_label_tr = label_2_dnn_label(train_label)
+    np.save("train_data", train_data)
+    np.save("train_label", train_label_tr)
     print("train:{}\ntrain_label:\n{}".format(len(train_data), train_label_tr))
 
 
