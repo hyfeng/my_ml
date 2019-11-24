@@ -15,7 +15,10 @@ sys.path.append("../common")
 import sigmoid
 import numpy as np
 import random
+import math
 from sklearn import datasets
+
+espi = 0.000000001
 
 class Layer:
     def __init__(self, unit_num, feature_num):
@@ -26,6 +29,7 @@ class Layer:
         self.activate = sigmoid
         ##学习率
         self.lam = 0.2
+        self.x = None
 
     def forward(self, x):
         """x是列向量,x一定是二维的，即是只有一个向量"""
@@ -36,11 +40,13 @@ class Layer:
         print("w:{}".format(self.w))
         dot_mul = np.dot(self.w, x)
         ret = self.activate.forward(dot_mul)
+        self.x = x
         return ret
 
-    def bprob(self, x, G):
+    def bprob(self, G):
         """G是外部输入的对layer输出的梯度"""
         """将梯度传递给输入层，即对输入的梯度"""
+        x = self.x
         acv_i = np.dot(self.w, x)
         act_g = self.activate.bprob(acv_i)
         #按元素乘法
@@ -49,8 +55,9 @@ class Layer:
         ret_G = np.dot(self.w.T, tmp_G)
         return ret_G
 
-    def update_G(self, x, G):
+    def update_G(self, G):
         """更新自己的参数"""
+        x = self.x
         acv_i = np.dot(self.w, x)
         print("sig input:\n{}".format(acv_i))
         ##激活函数输出的梯度
@@ -61,6 +68,62 @@ class Layer:
         w_g = np.dot(tmp_G, x.T)
         self.w = self.w - (w_g * self.lam)
 
+class CrossEntropyLoss:
+
+    def loss(self, y_list, x_list):
+        """输入时numpy数组"""
+        global espi
+        sum = 0.0
+        for i in range(len(y_list)):
+            sum += y_list[i] * math.log(x_list[i] + espi) +\
+                    (1 - y_list[i]) * math.log(1 - x_list[i] + espi)
+        return -sum
+
+    def jacbi(self, y_list, x_list):
+        global espi
+        tmp = [-(y_list[i] / (x_list[i] + espi) + (1 - y_list[i])/(1-x_list[i]+espi)) for i in range(len(y_list))]
+        return np.array(tmp).T
+
+
+class DNN:
+    def __init__(self):
+        self.layers = []
+        self.total_unit_num = 0
+        self.loss = CrossEntropyLoss()
+
+    def add_layer(self, unit_num, feature_num):
+        """每层最增加额外的偏置"""
+        layer = Layer(unit_num, feature_num + 1)
+        self.layers.append(layer)
+        self.total_unit_num += unit_num
+
+    def set_train(self, train, label):
+        self.train_data = train
+        self.train_label = label
+
+    def forward(self, x):
+        tmp_out = x
+        for layer in self.layers:
+            tmp_out = layer.forward(tmp_out)
+        return tmp_out
+
+    def fit(self, epoch, batch):
+        """默认使用交叉熵损失函数"""
+        print("tain___")
+        x = np.array(self.train_data[0]).reshape((1,4)).T
+        x = np.append(x, [[1]], axis = 0)
+        print("x.shape:{}; len:{}".format(x.shape, len(x.shape)))
+        print(x)
+        print(self.train_label[0])
+        ret = self.forward(x)
+        print("ret:{}".format(ret))
+        print("label:{}".format(self.train_label[0]))
+        ls = self.loss.loss(self.train_label[0], ret)
+        bp = self.loss.jacbi(self.train_label[0], ret)
+
+        print("shape:{}, loss:{}".format(ls.shape, ls))
+        print("shape:{}, jacbi:{}".format(bp.shape, bp))
+
 def load_data():
     train_data = np.load("train_data.npy")
     train_out = np.load("train_label.npy")
@@ -70,7 +133,13 @@ def load_data():
     print("train_out:\n{}".format(train_out))
     print("test_data:\n{}".format(test_data))
     print("test_label:\n{}".format(test_label))
+    return [train_data, train_out, test_data, test_label]
 
 if __name__ == "__main__":
-    load_data()
+    train_data, train_label, test_data, test_labbel = load_data()
+    dnn = DNN()
+    dnn.add_layer(4, 4)
+    dnn.set_train(train_data, train_label)
+    dnn.fit(6, 1)
+
     print("finished")
