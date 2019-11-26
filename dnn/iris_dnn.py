@@ -67,6 +67,7 @@ class Layer:
         print("tmp_G:\n{}".format(tmp_G))
         w_g = np.dot(tmp_G, x.T)
         self.w = self.w - (w_g * self.lam)
+        print("w:\n{}\n".format(self.w))
 
 class CrossEntropyLoss:
 
@@ -107,22 +108,49 @@ class DNN:
             tmp_out = layer.forward(tmp_out)
         return tmp_out
 
+    def backward(self, loss_vector):
+        tmp_out = loss_vector
+        la = len(self.layers)
+        for layer in self.layers[::-1]:
+            print("layer[{}]; bp:{}".format(la, tmp_out))
+            la -= 1
+            bp = layer.bprob(tmp_out)
+            layer.update_G(tmp_out)
+            tmp_out = bp
+        
+    def forward_one(self, idx):
+        x = np.array(self.train_data[idx]).reshape((1,4)).T
+        x = np.append(x, [[1]], axis = 0)
+        fw_ret = self.forward(x)
+        loss = self.loss.loss(self.train_data[idx], fw_ret)
+        bp = self.loss.jacbi(self.train_label[idx], fw_ret)
+        return [loss, bp]
+
     def fit(self, epoch, batch):
         """默认使用交叉熵损失函数"""
-        print("tain___")
-        x = np.array(self.train_data[0]).reshape((1,4)).T
-        x = np.append(x, [[1]], axis = 0)
-        print("x.shape:{}; len:{}".format(x.shape, len(x.shape)))
-        print(x)
-        print(self.train_label[0])
-        ret = self.forward(x)
-        print("ret:{}".format(ret))
-        print("label:{}".format(self.train_label[0]))
-        ls = self.loss.loss(self.train_label[0], ret)
-        bp = self.loss.jacbi(self.train_label[0], ret)
+        size = len(self.train_data)
+        for i in range(epoch):
+            print("======epoch[{}]=======".format(i))
+            times = size // batch
+            for ts in range(times):
+                print("+++++++bach[{}]++++++".format(ts))
+                idx = batch * ts
+                count = 1
+                loss_sum, bp_sum = self.forward_one(idx)
+                for at in range(1,batch):
+                    idx = idx + at
+                    if idx >= size:
+                        break
+                    loss, bp = self.forward_one(idx)
+                    loss_sum += loss
+                    bp_sum += bp
+                    count += 1
+                loss_sum /= count
+                bp_sum /= count
+                self.backward(bp_sum.T)
+                print("bp:{}".format(bp_sum.T))
+                print("loss:{}".format(loss_sum))
 
-        print("shape:{}, loss:{}".format(ls.shape, ls))
-        print("shape:{}, jacbi:{}".format(bp.shape, bp))
 
 def load_data():
     train_data = np.load("train_data.npy")
