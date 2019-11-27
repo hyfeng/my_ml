@@ -36,8 +36,6 @@ class Layer:
         if len(x.shape) <= 1:
             print("x input is illegal; x must be a matrix, column is feature vector")
             exit(1)
-        print("x:{}".format(x))
-        print("w:{}".format(self.w))
         dot_mul = np.dot(self.w, x)
         ret = self.activate.forward(dot_mul)
         self.x = x
@@ -59,15 +57,11 @@ class Layer:
         """更新自己的参数"""
         x = self.x
         acv_i = np.dot(self.w, x)
-        print("sig input:\n{}".format(acv_i))
         ##激活函数输出的梯度
         act_g = self.activate.bprob(acv_i)
-        print("sig bprob output:\n{}".format(act_g))
         tmp_G = G * act_g
-        print("tmp_G:\n{}".format(tmp_G))
         w_g = np.dot(tmp_G, x.T)
         self.w = self.w - (w_g * self.lam)
-        print("w:\n{}\n".format(self.w))
 
 class CrossEntropyLoss:
 
@@ -112,7 +106,6 @@ class DNN:
         tmp_out = loss_vector
         la = len(self.layers)
         for layer in self.layers[::-1]:
-            print("layer[{}]; bp:{}".format(la, tmp_out))
             la -= 1
             bp = layer.bprob(tmp_out)
             layer.update_G(tmp_out)
@@ -133,7 +126,6 @@ class DNN:
             print("======epoch[{}]=======".format(i))
             times = size // batch
             for ts in range(times):
-                print("+++++++bach[{}]++++++".format(ts))
                 idx = batch * ts
                 count = 1
                 loss_sum, bp_sum = self.forward_one(idx)
@@ -148,8 +140,17 @@ class DNN:
                 loss_sum /= count
                 bp_sum /= count
                 self.backward(bp_sum.T)
-                print("bp:{}".format(bp_sum.T))
-                print("loss:{}".format(loss_sum))
+
+    def predict(self,x_vector):
+        """端到端，x_vector是行向量，且未加偏置项"""
+        x = np.array(x_vector).reshape((1,4)).T
+        x = np.append(x, [[1]], axis = 0)
+        fw_ret = self.forward(x).ravel()
+        print("fw_ret:{}".format(fw_ret))
+        idx = np.argmax(fw_ret)
+        res = np.zeros(fw_ret.shape, dtype=np.int32)
+        res[idx] = 1
+        return res
 
 
 def load_data():
@@ -164,10 +165,17 @@ def load_data():
     return [train_data, train_out, test_data, test_label]
 
 if __name__ == "__main__":
-    train_data, train_label, test_data, test_labbel = load_data()
+    train_data, train_label, test_data, test_label = load_data()
     dnn = DNN()
     dnn.add_layer(4, 4)
     dnn.set_train(train_data, train_label)
-    dnn.fit(6, 1)
+    dnn.fit(50, 1)
+
+    for i in range(len(test_data)):
+        x = test_data[i]
+        lb = test_label[i]
+        l = dnn.predict(x)
+        print("predict:{}\nlabel:{}\n".format(l, lb))
+
 
     print("finished")
