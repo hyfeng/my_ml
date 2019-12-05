@@ -94,7 +94,7 @@ class CrossEntropyLoss:
 
     def jacbi(self, y_list, x_list):
         global espi
-        tmp = [-(y_list[i] / (x_list[i] + espi) + (1 - y_list[i])/(1-x_list[i]+espi)) for i in range(len(y_list))]
+        tmp = [-(y_list[i] / (x_list[i] + espi) - (1 - y_list[i])/(1-x_list[i]+espi)) for i in range(len(y_list))]
         return np.array(tmp).T
 
 
@@ -121,7 +121,7 @@ class DNN:
         i = 0
         for layer in self.layers:
             if debug:
-                print("fw layer[{0}]\ninput:\n{1}".format(i, tmp_out))
+                print("fw layer[{0}]\ninput:\n{1}".format(i, tmp_out.ravel()))
                 i+=1
             tmp_out = layer.forward(tmp_out)
         return tmp_out
@@ -131,7 +131,8 @@ class DNN:
         la = len(self.layers)
         for layer in self.layers[::-1]:
             la -= 1
-            print("layer[{}]:bp_degrade[shape:{}\n{}".format(la, tmp_out.shape, tmp_out))
+            print("layer[{}]:bp_degrade[shape:{}]\n{}".format(la,
+                tmp_out.shape, tmp_out.ravel()))
             bp = layer.bprob(tmp_out)
             layer.update_G(tmp_out)
             tmp_out = bp
@@ -148,8 +149,12 @@ class DNN:
         fw_ret = self.forward(x)
         if debug:
             print("fw_ret:shape[{}]".format(fw_ret.shape))
-        loss = self.loss.loss(self.train_data[idx], fw_ret)
+            print("fw_ret:{}".format(fw_ret.ravel()))
+            print("label:{}".format(self.train_label[idx].ravel()))
+        loss = self.loss.loss(self.train_label[idx], fw_ret)
         bp = self.loss.jacbi(self.train_label[idx], fw_ret)
+        print("loss:{}".format(loss))
+        print("bp:{}".format(bp.ravel()))
         return [loss, bp]
 
     def fit(self, epoch, batch):
@@ -204,7 +209,7 @@ if __name__ == "__main__":
     dnn.add_layer(20,20)
     dnn.add_layer(4,20)
     dnn.set_train(train_data, train_label)
-    dnn.fit(10, 1)
+    dnn.fit(10, 10)
 
     for i in range(len(test_data)):
         x = test_data[i]
