@@ -18,7 +18,7 @@ import random
 import math
 from sklearn import datasets
 
-debug = True
+debug = False 
 
 espi = 0.000000001
 
@@ -131,8 +131,9 @@ class DNN:
         la = len(self.layers)
         for layer in self.layers[::-1]:
             la -= 1
-            print("layer[{}]:bp_degrade[shape:{}]\n{}".format(la,
-                tmp_out.shape, tmp_out.ravel()))
+            if debug:
+                print("layer[{}]:bp_degrade[shape:{}]\n{}".format(la,\
+                        tmp_out.shape, tmp_out.ravel()))
             bp = layer.bprob(tmp_out)
             layer.update_G(tmp_out)
             tmp_out = bp
@@ -153,18 +154,21 @@ class DNN:
             print("label:{}".format(self.train_label[idx].ravel()))
         loss = self.loss.loss(self.train_label[idx], fw_ret)
         bp = self.loss.jacbi(self.train_label[idx], fw_ret)
-        print("loss:{}".format(loss))
-        print("bp:{}".format(bp.ravel()))
+        if debug:
+            print("loss:{}".format(loss))
+            print("bp:{}".format(bp.ravel()))
         return [loss, bp]
 
     def fit(self, epoch, batch):
         """默认使用交叉熵损失函数"""
         size = len(self.train_data)
-        print("===== init ======")
-        self.print()
-        print("+++++++++++++")
+        if debug:
+            print("===== init ======")
+            self.print()
+            print("+++++++++++++")
         for i in range(epoch):
-            print("======epoch[{}]=======".format(i))
+            if debug:
+                print("======epoch[{}]=======".format(i))
             times = size // batch
             for ts in range(times):
                 idx = batch * ts
@@ -181,14 +185,16 @@ class DNN:
                 loss_sum /= count
                 bp_sum /= count
                 self.backward(bp_sum.T)
-            self.print()
-            print("+++++++++++")
+            if debug:
+                self.print()
+                print("+++++++++++")
 
     def predict(self,x_vector):
         """端到端，x_vector是行向量，且未加偏置项"""
         x = np.array(x_vector).reshape((1,4)).T
         fw_ret = self.forward(x).ravel()
-        print("fw_ret:{}".format(fw_ret))
+        if debug:
+            print("fw_ret:{}".format(fw_ret))
         idx = np.argmax(fw_ret)
         res = np.zeros(fw_ret.shape, dtype=np.int32)
         res[idx] = 1
