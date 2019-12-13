@@ -13,22 +13,24 @@
 import sys
 sys.path.append("../common")
 import sigmoid
+import softmax
 import numpy as np
 import random
 import math
 from sklearn import datasets
 
-debug = False 
+debug = True 
 
 espi = 0.000000001
 
 class Layer:
-    def __init__(self, unit_num, feature_num):
+    def __init__(self, unit_num, feature_num, activation = sigmoid):
         self.unit_num = unit_num
+        self.input_num = feature_num
         ##增加一个偏置
         self.feature_num = feature_num + 1
         self.w = np.random.uniform(-0.5, 0.5, (unit_num, self.feature_num))
-        self.activate = sigmoid
+        self.activate = activation
         ##学习率
         self.lam = 0.01
         self.x = None
@@ -58,15 +60,16 @@ class Layer:
         """去掉对偏置项的梯度"""
         x = self.x
         acv_i = np.dot(self.w, x)
-        act_g = self.activate.bprob(acv_i)
+        print("acv_i:shape[{}]".format(acv_i.shape))
+        print("G:shape[{}]".format(G.shape))
+        act_g = self.activate.bprob(acv_i.T.ravel(), G.T.ravel())
         if debug:
             print("w:shape[{}]".format(self.w.shape))
             print("x:shape[{}]".format(x.shape))
             print("acv_i:shape[{}]".format(acv_i.shape))
             print("act_g:shape[{}]".format(act_g.shape))
             print("G:shape[{}]".format(G.shape))
-        #按元素乘法
-        tmp_G = G * act_g
+        tmp_G = act_g.reshape(G.shape)
         #点积
         ret_G = np.dot(self.w.T, tmp_G)
         return ret_G[:-1]
@@ -76,8 +79,8 @@ class Layer:
         x = self.x
         acv_i = np.dot(self.w, x)
         ##激活函数输出的梯度
-        act_g = self.activate.bprob(acv_i)
-        tmp_G = G * act_g
+        act_g = self.activate.bprob(acv_i.T.ravel(), G.T.ravel())
+        tmp_G = act_g.reshape(G.shape)
         w_g = np.dot(tmp_G, x.T)
         self.w = self.w - (w_g * self.lam)
 
@@ -104,9 +107,13 @@ class DNN:
         self.total_unit_num = 0
         self.loss = CrossEntropyLoss()
 
-    def add_layer(self, unit_num, feature_num):
-        """每层最增加额外的偏置"""
-        layer = Layer(unit_num, feature_num)
+    def add_layer(self, unit_num, input_num = None, activation = sigmoid):
+        if input_num == None and len(self.layers) == 0:
+            raise Exception("the first layer you must give input featuren_num")
+        if input_num == None:
+            input_num = self.layers[-1].unit_num
+
+        layer = Layer(unit_num, input_num, activation)
         self.layers.append(layer)
         self.total_unit_num += unit_num
 
@@ -208,20 +215,31 @@ def load_data():
     test_label = np.load("test_label.npy")
     return [train_data, train_out, test_data, test_label]
 
+def precission(label, predict):
+    right = 0
+    for i in range(len(predict)):
+        label_idx = np.argmax(label[i])
+        predict_idx = np.argmax(predict[i])
+        print("{}:{}".format(label_idx, predict_idx))
+
+
 if __name__ == "__main__":
     train_data, train_label, test_data, test_label = load_data()
     dnn = DNN()
-    dnn.add_layer(20, 4)
-    dnn.add_layer(20,20)
-    dnn.add_layer(4,20)
+    dnn.add_layer(unit_num = 20, input_num = 4)
+    dnn.add_layer(unit_num = 4, activation = softmax)
     dnn.set_train(train_data, train_label)
-    dnn.fit(10, 10)
+    dnn.fit(epoch = 10, batch = 10)
 
+    predict = []
     for i in range(len(test_data)):
         x = test_data[i]
         lb = test_label[i]
         l = dnn.predict(x)
+        predict.append(l)
         print("predict:{}\nlabel:{}\n".format(l, lb))
+    print("prcission:")
+    precission(test_label, predict)
 
 
     print("finished")
