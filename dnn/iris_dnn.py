@@ -178,20 +178,25 @@ class DNN:
                 print("======epoch[{}]=======".format(i))
             times = size // batch
             for ts in range(times):
-                idx = batch * ts
+                idx_base = batch * ts
                 count = 1
-                loss_sum, bp_sum = self.forward_one(idx)
+                loss_sum, bp_sum = self.forward_one(idx_base)
+                print("first idx:{}; loss:{}".format(idx_base, loss_sum))
                 for at in range(1,batch):
-                    idx = idx + at
+                    idx = idx_base + at
                     if idx >= size:
                         break
                     loss, bp = self.forward_one(idx)
+                    print("first idx:{}; loss:{}".format(idx, loss))
                     loss_sum += loss
                     bp_sum += bp
                     count += 1
                 loss_sum /= count
                 bp_sum /= count
                 self.backward(bp_sum.T)
+                loss, bp = self.forward_one(idx_base)
+                print("sec idx:{}; loss:{}".format(idx_base, loss))
+                break
             if debug:
                 self.print()
                 print("+++++++++++")
@@ -230,7 +235,7 @@ if __name__ == "__main__":
     dnn.add_layer(unit_num = 4, activation = softmax)
     dnn.set_train(train_data, train_label)
     dnn.fit(epoch = 10, batch = 10)
-
+    exit(0)
     predict = []
     for i in range(len(test_data)):
         x = test_data[i]
