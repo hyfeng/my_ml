@@ -7,7 +7,7 @@
 #   file:iris_dnn.py
 #   author:yourname
 #   date:2019-11-17
-#   description:iris数据使用dnn训练
+#   description:iris数据使用dnn训练, iris数据类目数量
 #
 #================================================================
 import sys
