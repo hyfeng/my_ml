@@ -242,7 +242,7 @@ if __name__ == "__main__":
     dnn.add_layer(unit_num = 3, activation = softmax)
     dnn.set_train(train_data, train_label)
     dnn.fit(epoch = 10, batch = 10)
-    exit(0)
+
     predict = []
     for i in range(len(test_data)):
         x = test_data[i]
