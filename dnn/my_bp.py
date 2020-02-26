@@ -14,6 +14,7 @@ from __future__ import print_function, division
 import numpy as np
 import random
 import math
+import matplotlib.pyplot as plt
 
 #学习异或逻辑
 x = np.array([[1,0],[0,1],[0,0],[1,1]])
@@ -21,16 +22,20 @@ y = np.array([1,1,0,0]).reshape((1,4))
 #x = np.array([[1,0]])
 #y = np.array([1]).reshape((1,1))
 
-layer = [2,1] #0层是输入层，这里2个隐藏层
-epoch = 200 #训练200次
-alpha = 0.1 #学习率
+layer = [2,2,1] #0层是输入层，这里2个隐藏层
+epoch = 3000 #训练200次
+alpha = 0.3 #学习率
 
-def costfunction(predict, label):
+epoch_wb = []
+
+train_cost = {}
+
+def entropy_costfunction(predict, label):
     #最大似然函数
     #predict 一列是一个样本的预测
-    return -label * np.log(predict) - (1-label) * np.log(1.000001 - predict)
+    return -label * np.log(predict + 0.0000001) - (1-label) * np.log(1.000001 - predict)
 
-def diff_costfunction(predict, label):
+def diff_entropy_costfunction(predict, label):
     return (1 - label) / (1 - predict + 0.000001) - label / (predict + 0.0000001)
 
 def sigmoid(z):
@@ -42,14 +47,14 @@ def diff_sigmoid(z):
 b = []  #0层是输入层，无偏置
 W = []  #0层是输入层，无参数
 
+costfunction = entropy_costfunction
+diff_costfunction = diff_entropy_costfunction
+
 b.append(np.array([]))
 W.append(np.array([]))
 for i in range(1, len(layer)):
-    b.append(np.zeros(shape = (layer[i], 1)))
+    b.append(np.random.random(size = (layer[i], 1)))
     W.append(np.random.random(size = (layer[i], layer[i - 1]))) #初始化参数
-print("init")
-print("b shape:{}\n :{}".format(b[1].shape, b))
-print("W shape:{}\n:{}".format(W[1].shape, W))
 
 m = len(y)
 
@@ -57,23 +62,18 @@ m = len(y)
 for i in range(epoch):
     #a0是输入层，一列代表一个样本
     #前向传播
-    print("epoch:%d" % i)
     a = [0] * len(layer)
     z = [0] * len(layer)
     delta = [0] * len(layer)
-    print("a:{}".format(a))
     a[0] = x.T
     for j in range(1, len(layer)):
-        print("b[{}] shape:{}".format(j, b[j].shape))
         z[j] = np.dot(W[j], a[j - 1]) + b[j]
         a[j] = sigmoid(z[j])
     #反向传播
     predict = a[-1]
-    print("epoch:{} predict:{}".format(i, predict))
     cost_f = costfunction(predict, y)
-    print("epoch:{} cost:{}".format(i, np.sum(cost_f, axis=1)))
+    train_cost[i] = np.sum(cost_f, axis = 1)[0]
     delta[-1] = diff_costfunction(predict, y)
-    print("echo:{} delta:{}".format(i, delta[-1]))
     for j in range(1, len(layer)):
         j = -j
         '''
@@ -88,16 +88,10 @@ for i in range(epoch):
         '''
         delta[j - 1] = np.dot(W[j].T, delta_z)
         #更新参数
-        delta_w = np.dot(delta_z, a[j].T)
-        delta_b = delta_z
-        arg_delta_w = 1.0 / m * np.sum(delta_w, axis = 1, keepdims=True)
-#        print("arg_delta_w:{}".format(arg_delta_w))
-        arg_delta_b = np.sum(delta_b, axis = 1, keepdims=True) / m
-        W[j] = W[j] - alpha * arg_delta_w
-#        print("b[{}]:{}".format(j,b[j]))
-#        print("arg_delta_b:{}".format(arg_delta_b))
-        b[j] = b[j] - alpha * arg_delta_b
-#        print("b[{}]:{}".format(j,b[j]))
+        delta_w = np.dot(delta_z, a[j - 1].T) / m
+        delta_b = np.sum(delta_z, axis = 1, keepdims = True) / m
+        W[j] = W[j] - alpha * delta_w
+        b[j] = b[j] - alpha * delta_b
 
 def predictfunction(test):
     """一列一个样本"""
@@ -110,10 +104,30 @@ def predictfunction(test):
 #        print("layer:{},\n W:{},\nb:{}\n z:{}\na:{}".format(j,W[j], b[j], z[j], a[j]))
     return a[-1][0]
 
+p_x = [x for x in train_cost.keys()]
+p_x.sort()
+p_y = [train_cost[e] for e in p_x]
+plt.figure(12)
+plt.subplot(211)
+plt.plot(p_x, p_y, "g-x")
 print("test")
 test = np.array([[1,0],[0,0],[0,1],[1,1]]).T
 test_label = np.array([1,0,1,0]).reshape((1,4))
-predict = predictfunction(test)
-print("test:{}".format(test))
-print("test predict:{}".format(predict))
-print("test: cost:{}".format(costfunction(predict, test_label)))
+predict = predictfunction(test).squeeze()
+
+print(predict)
+pos_idx = np.where(predict > 0.5)
+neg_idx = np.where(predict <= 0.5)
+print("pos idx:{}".format(pos_idx))
+print("neg_idx:{}".format(neg_idx))
+pos_d = test.T[pos_idx]
+neg_d = test.T[neg_idx]
+pos_x = [e[0] for e in pos_d]
+pos_y = [e[1] for e in pos_d]
+neg_x = [e[0] for e in neg_d]
+neg_y = [e[1] for e in neg_d]
+plt.subplot(212)
+plt.scatter(neg_x, neg_y, s = 40, c = 'b', marker="x")
+plt.scatter(pos_x, pos_y, s = 40, c = 'y', marker="o")
+plt.show()
+
