@@ -11,18 +11,53 @@
 #
 #================================================================
 from __future__ import print_function, division
+from sklearn.datasets import load_iris
 import numpy as np
 import random
 import math
 import matplotlib.pyplot as plt
 
-#学习异或逻辑
-x = np.array([[1,0],[0,1],[0,0],[1,1]])
-y = np.array([1,1,0,0]).reshape((1,4))
-#x = np.array([[1,0]])
-#y = np.array([1]).reshape((1,1))
+def data_analysis(iris):
+    """分析数据"""
+    x = iris[0]
+    y = iris[1]
+    print(x.shape)
+    print(y.shape)
+    print(x[0])
+    print(y[0])
+    st = {}
+    for k in y:
+        if k in st:
+            st[k] += 1
+        else:
+            st[k] = 1
+    for c in st:
+        print("class:{}, occure:{}".format(c, st[c]))
 
-layer = [2,2,1] #0层是输入层，这里2个隐藏层
+def prepare_data(iris):
+    y = np.zeros(shape = (len(iris[1]), 3))
+    for i, v in enumerate(iris[1]):
+        y[i][v] = 1
+    print(iris[1][0:3])
+    print(y[0:3])
+    print(iris[1][-1])
+    print(y[-1])
+    return [iris[0], y]
+
+#学习异或逻辑
+iris_feature = load_iris().data
+iris_label = load_iris().target
+data_analysis([iris_feature, iris_label])
+x,y = prepare_data([iris_feature, iris_label])
+train_size = 120
+train_x = x[0:train_size]
+train_y = y[0:train_size]
+test_x = x[train_size:]
+test_y = y[train_size:]
+print(x.shape)
+print(y.shape)
+
+layer = [4,3,3] #0层是输入层，这里2个隐藏层
 epoch = 3000 #训练200次
 alpha = 0.3 #学习率
 
@@ -62,10 +97,12 @@ m = len(y)
 for i in range(epoch):
     #a0是输入层，一列代表一个样本
     #前向传播
+    x = train_x.T
+    y = train_y.T
     a = [0] * len(layer)
     z = [0] * len(layer)
     delta = [0] * len(layer)
-    a[0] = x.T
+    a[0] = x
     for j in range(1, len(layer)):
         z[j] = np.dot(W[j], a[j - 1]) + b[j]
         a[j] = sigmoid(z[j])
@@ -102,7 +139,7 @@ def predictfunction(test):
         z[j] = np.dot(W[j], a[j - 1]) + b[j]
         a[j] = sigmoid(z[j])
 #        print("layer:{},\n W:{},\nb:{}\n z:{}\na:{}".format(j,W[j], b[j], z[j], a[j]))
-    return a[-1][0]
+    return a[-1].T
 
 p_x = [x for x in train_cost.keys()]
 p_x.sort()
@@ -111,11 +148,10 @@ plt.figure(12)
 plt.subplot(211)
 plt.plot(p_x, p_y, "g-x")
 print("test")
-test = np.array([[1,0],[0,0],[0,1],[1,1]]).T
-test_label = np.array([1,0,1,0]).reshape((1,4))
-predict = predictfunction(test).squeeze()
+predict = predictfunction(test_x.T)
 
 print(predict)
+exit(0)
 pos_idx = np.where(predict > 0.5)
 neg_idx = np.where(predict <= 0.5)
 print("pos idx:{}".format(pos_idx))
