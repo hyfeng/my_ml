@@ -21,6 +21,7 @@ def softmax(z):
 
 def diff_softmax(z):
     """z是(1,n)矩阵，是softmax的输入"""
+    """返回一个二维数组，使用时使用 (1,n) * res即可"""
     size = z.shape[1]
     res = np.zeros(shape = (size, size))
     soft_res = softmax(z)
