@@ -13,25 +13,26 @@
 import numpy as np
 
 def softmax(z):
-    """输出z(1,n)的softmax函数"""
+    """输出z(m,n)的softmax函数,m个样本,n是softmax的单元"""
     res = np.exp(z)
     total = np.sum(res,axis = 1)
     res = res / total
     return res
 
 def diff_softmax(z):
-    """z是(1,n)矩阵，是softmax的输入"""
-    """返回一个二维数组，使用时使用 (1,n) * res即可"""
+    """z是(m,n)矩阵，是softmax的输入,m个样本，n个单元"""
+    """返回一个二维数组，第i列是第i个输出对所有输入的梯度,多个样本输入的话，返回三维数组"""
     size = z.shape[1]
-    res = np.zeros(shape = (size, size))
+    cc = z.shape[0]
+    res = np.zeros(shape = (cc, size, size))
     soft_res = softmax(z)
-    for i in range(size):
-        for k in range(size):
-            if i == k:
-                res[k][i] = soft_res[0][i] * (1 - soft_res[0][i])
-            else:
-                res[k][i] = -(soft_res[0][i] * soft_res[0][i])
-    print(res)
+    for j in range(cc):
+        for i in range(size):
+            for k in range(size):
+                if i == k:
+                    res[j][k][i] = soft_res[j][i] * (1 - soft_res[j][i])
+                else:
+                    res[j][k][i] = -(soft_res[j][i] * soft_res[j][i])
     return res
 
 def sigmoid(z):
